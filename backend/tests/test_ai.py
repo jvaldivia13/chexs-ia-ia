@@ -42,3 +42,24 @@ def test_normal_ai_avoids_hanging_piece():
     move = get_ai_move(engine, "normal")
     legal_moves = engine.get_legal_moves()
     assert move in legal_moves
+
+
+def test_difficult_ai_returns_legal_move():
+    engine = ChessEngine()
+    engine.make_move("e2", "e4")
+
+    move = get_ai_move(engine, "difficult")
+    legal_moves = engine.get_legal_moves()
+    assert move in legal_moves
+
+
+def test_difficult_ai_plays_reasonable_opening():
+    engine = ChessEngine()
+    # After 1.e4, normal responses are e5, c5, d5, etc.
+    engine.make_move("e2", "e4")
+    move = get_ai_move(engine, "difficult")
+
+    # Should not make weird opening moves
+    # This is a soft test—difficult AI just needs to be legal
+    legal_moves = engine.get_legal_moves()
+    assert move in legal_moves

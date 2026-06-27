@@ -96,8 +96,63 @@ def get_normal_move(engine: ChessEngine) -> str:
 
 
 def get_difficult_move(engine: ChessEngine) -> str:
+    """Minimax with alpha-beta pruning, depth 3"""
+    legal_moves = engine.get_legal_moves()
+
+    best_move = None
+    best_score = -float('inf')
+    alpha = -float('inf')
+    beta = float('inf')
+
+    for move_uci in legal_moves:
+        engine.board.push_uci(move_uci)
+        score = minimax(engine.board, depth=3, alpha=alpha, beta=beta, is_maximizing=False)
+        engine.board.pop()
+
+        if score > best_score:
+            best_score = score
+            best_move = move_uci
+
+        alpha = max(alpha, best_score)
+
+    return best_move if best_move else random.choice(legal_moves)
+
+
+def minimax(board: chess.Board, depth: int, alpha: float, beta: float, is_maximizing: bool) -> float:
+    """Minimax with alpha-beta pruning
+
+    Args:
+        board: chess.Board object
+        depth: Remaining search depth (0 = leaf node)
+        alpha: Best score maximizer can guarantee
+        beta: Best score minimizer can guarantee
+        is_maximizing: True if maximizing player's turn, False if minimizing
+
+    Returns:
+        Evaluation score of the position
     """
-    Placeholder for difficult difficulty AI.
-    Currently returns a random legal move.
-    """
-    return random.choice(engine.get_legal_moves())
+    if depth == 0 or board.is_game_over():
+        return evaluate_position(board)
+
+    if is_maximizing:
+        max_score = -float('inf')
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, alpha, beta, False)
+            board.pop()
+            max_score = max(max_score, score)
+            alpha = max(alpha, max_score)
+            if beta <= alpha:
+                break  # Beta cutoff
+        return max_score
+    else:
+        min_score = float('inf')
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, alpha, beta, True)
+            board.pop()
+            min_score = min(min_score, score)
+            beta = min(beta, min_score)
+            if beta <= alpha:
+                break  # Alpha cutoff
+        return min_score
