@@ -1,0 +1,12 @@
+.status {
+  padding: 15px;
+  background: #e8f5e9;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.status.ended {
+  background: #ffebee;
+}
