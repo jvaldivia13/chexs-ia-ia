@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { NewGameResponse, MoveRequest, MoveResponse, GameStateResponse } from '../types/api'
+import type { NewGameResponse, MoveResponse, GameStateResponse } from '../types/api'
 
 const API_BASE = '/api'
 

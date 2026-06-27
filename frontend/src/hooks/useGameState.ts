@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { GameState, Difficulty, Move } from '../types/chess'
+import type { GameState, Difficulty } from '../types/chess'
 import { api } from '../services/api'
 
 export function useGameState() {
