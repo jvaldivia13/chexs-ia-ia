@@ -65,7 +65,7 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
           <PieceSquare
             key={square}
             square={square}
-            piece={piece ? piece.color + piece.type.toUpperCase() : null}
+            piece={piece ? (piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase()) : null}
             isLight={isLight}
             isSelected={selectedSquare === square}
             isLegal={legalMoves.includes(square)}

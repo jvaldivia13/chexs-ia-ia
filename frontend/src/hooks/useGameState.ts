@@ -14,7 +14,7 @@ export function useGameState() {
       const response = await api.newGame(selectedDifficulty)
       setDifficulty(selectedDifficulty)
       setGameState({
-        fen: response.boardFen,
+        fen: response.board_fen,
         turn: 'white',
         status: 'ongoing',
         legalMoves: [],
@@ -29,23 +29,28 @@ export function useGameState() {
   }, [])
 
   const makeMove = useCallback(async (from: string, to: string, promotion?: string) => {
-    if (!gameState) return false
+    if (!gameState) {
+      console.error('No game state')
+      return false
+    }
 
     setLoading(true)
     try {
+      console.log('Making move:', { from, to, promotion })
       const response = await api.makeMove(from, to, promotion)
+      console.log('Move response:', response)
 
       setGameState({
-        fen: response.boardFen,
-        turn: response.gameStatus === 'ongoing' ? 'white' : 'black',
-        status: response.gameStatus as any,
-        legalMoves: response.legalMoves,
-        playerInCheck: response.playerInCheck
+        fen: response.board_fen,
+        turn: response.game_status === 'ongoing' ? 'white' : 'black',
+        status: response.game_status as any,
+        legalMoves: response.legal_moves,
+        playerInCheck: response.player_in_check
       })
 
       const newMoves = [...moveHistory]
-      if (response.playerMove) newMoves.push(response.playerMove)
-      if (response.aiMove) newMoves.push(response.aiMove)
+      if (response.player_move) newMoves.push(response.player_move)
+      if (response.ai_move) newMoves.push(response.ai_move)
       setMoveHistory(newMoves)
 
       return true

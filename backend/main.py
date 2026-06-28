@@ -18,7 +18,7 @@ app.add_middleware(
 current_game_id = None
 
 
-@app.post("/api/game/new", response_model=NewGameResponse)
+@app.post("/game/new", response_model=NewGameResponse)
 def new_game(request: NewGameRequest):
     global current_game_id
 
@@ -36,7 +36,7 @@ def new_game(request: NewGameRequest):
     )
 
 
-@app.post("/api/game/move", response_model=MoveResponse)
+@app.post("/game/move", response_model=MoveResponse)
 def make_move(request: MoveRequest):
     global current_game_id
 
@@ -75,7 +75,7 @@ def make_move(request: MoveRequest):
     )
 
 
-@app.get("/api/game/state", response_model=GameStateResponse)
+@app.get("/game/state", response_model=GameStateResponse)
 def game_state():
     global current_game_id
 
