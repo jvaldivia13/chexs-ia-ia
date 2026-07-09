@@ -11,6 +11,7 @@ class NewGameResponse(BaseModel):
     message: str
 
 class MoveRequest(BaseModel):
+    game_id: Optional[str] = None
     from_square: str
     to_square: str
     promotion: Optional[str] = None

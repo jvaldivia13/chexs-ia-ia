@@ -11,6 +11,7 @@ export interface Move {
 }
 
 export interface GameState {
+  gameId: string
   fen: string
   turn: Color
   status: GameStatus

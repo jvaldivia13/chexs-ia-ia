@@ -14,6 +14,7 @@ export function useGameState() {
       const response = await api.newGame(selectedDifficulty)
       setDifficulty(selectedDifficulty)
       setGameState({
+        gameId: response.game_id,
         fen: response.board_fen,
         turn: 'white',
         status: 'ongoing',
@@ -37,13 +38,14 @@ export function useGameState() {
     setLoading(true)
     try {
       console.log('Making move:', { from, to, promotion })
-      const response = await api.makeMove(from, to, promotion)
+      const response = await api.makeMove(gameState.gameId, from, to, promotion)
       console.log('Move response:', response)
 
       setGameState({
+        gameId: gameState.gameId,
         fen: response.board_fen,
         turn: response.game_status === 'ongoing' ? 'white' : 'black',
-        status: response.game_status as any,
+        status: response.game_status,
         legalMoves: response.legal_moves,
         playerInCheck: response.player_in_check
       })

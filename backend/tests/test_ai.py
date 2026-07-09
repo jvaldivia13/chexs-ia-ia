@@ -63,3 +63,15 @@ def test_difficult_ai_plays_reasonable_opening():
     # This is a soft test—difficult AI just needs to be legal
     legal_moves = engine.get_legal_moves()
     assert move in legal_moves
+
+
+def test_normal_ai_black_captures_high_value_piece():
+    engine = ChessEngine()
+    engine.set_fen("4k3/8/5n2/8/4Q3/8/8/4K3 b - - 0 1")
+    assert get_ai_move(engine, "normal") == "f6e4"
+
+
+def test_difficult_ai_black_captures_high_value_piece():
+    engine = ChessEngine()
+    engine.set_fen("4k3/8/5n2/8/4Q3/8/8/4K3 b - - 0 1")
+    assert get_ai_move(engine, "difficult") == "f6e4"

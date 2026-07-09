@@ -20,8 +20,8 @@ export const GamePage: React.FC = () => {
     setShowDifficultySelect(true)
   }
 
-  const handleMove = async (from: string, to: string) => {
-    return await makeMove(from, to)
+  const handleMove = async (from: string, to: string, promotion?: string) => {
+    return await makeMove(from, to, promotion)
   }
 
   if (showDifficultySelect) {

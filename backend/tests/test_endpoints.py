@@ -6,6 +6,7 @@ import os
 # Add backend directory to path so we can import main
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import main
 from main import app
 from game_state import games
 
@@ -16,8 +17,10 @@ client = TestClient(app)
 def clear_games():
     """Clear all games before each test."""
     games.clear()
+    main.current_game_id = None
     yield
     games.clear()
+    main.current_game_id = None
 
 
 def test_new_game_endpoint():
@@ -252,6 +255,28 @@ def test_sequential_games():
         "promotion": None
     })
     assert move2.status_code == 200
+
+
+def test_moves_are_applied_to_requested_game_id():
+    resp1 = client.post("/api/game/new", json={"difficulty": "easy"})
+    game1_id = resp1.json()["game_id"]
+
+    resp2 = client.post("/api/game/new", json={"difficulty": "easy"})
+    game2_id = resp2.json()["game_id"]
+
+    move1 = client.post("/api/game/move", json={
+        "game_id": game1_id,
+        "from_square": "e2",
+        "to_square": "e4",
+        "promotion": None
+    })
+    assert move1.status_code == 200
+
+    state1 = client.get("/api/game/state", params={"game_id": game1_id}).json()
+    state2 = client.get("/api/game/state", params={"game_id": game2_id}).json()
+
+    assert state1["board_fen"] != state2["board_fen"]
+    assert state2["board_fen"] == resp2.json()["board_fen"]
 
 
 def test_health_check():

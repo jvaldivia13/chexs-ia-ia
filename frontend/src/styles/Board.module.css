@@ -41,10 +41,27 @@
   background-color: #baca44;
   border-radius: 50%;
   position: absolute;
+  pointer-events: none;
+}
+
+.capture {
+  box-shadow: inset 0 0 0 3px #d9480f;
+}
+
+.capture::after {
+  content: '';
+  width: 46px;
+  height: 46px;
+  background-color: transparent;
+  border: 3px solid #d9480f;
+  border-radius: 50%;
+  position: absolute;
+  pointer-events: none;
 }
 
 .piece {
   font-size: 40px;
   line-height: 1;
   user-select: none;
+  pointer-events: none;
 }

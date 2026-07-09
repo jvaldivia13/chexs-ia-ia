@@ -12,6 +12,7 @@ interface Props {
   isLight: boolean
   isSelected: boolean
   isLegal: boolean
+  isCapture: boolean
   onClick: (square: string) => void
 }
 
@@ -21,15 +22,19 @@ export const PieceSquare: React.FC<Props> = ({
   isLight,
   isSelected,
   isLegal,
+  isCapture,
   onClick
 }) => {
   return (
     <div
+      role="button"
+      aria-label={square}
       className={`
         ${styles.square}
         ${isLight ? styles.light : styles.dark}
         ${isSelected ? styles.selected : ''}
         ${isLegal ? styles.legal : ''}
+        ${isCapture ? styles.capture : ''}
       `}
       onClick={() => onClick(square)}
     >

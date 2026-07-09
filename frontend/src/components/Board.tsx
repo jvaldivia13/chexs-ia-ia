@@ -3,16 +3,21 @@ import { Chess, type Square } from 'chess.js'
 import { PieceSquare } from './PieceSquare'
 import styles from '../styles/Board.module.css'
 
+interface LegalMoveHint {
+  to: string
+  isCapture: boolean
+}
+
 interface BoardProps {
   fen: string
-  onMove: (from: string, to: string) => Promise<boolean>
+  onMove: (from: string, to: string, promotion?: string) => Promise<boolean>
   disabled: boolean
 }
 
 export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
   const [chess, setChess] = useState(new Chess(fen))
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
-  const [legalMoves, setLegalMoves] = useState<string[]>([])
+  const [legalMoves, setLegalMoves] = useState<LegalMoveHint[]>([])
 
   useEffect(() => {
     const newChess = new Chess(fen)
@@ -29,15 +34,41 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
       const moves = chess.moves({ square: square as Square, verbose: true })
       if (moves.length > 0) {
         setSelectedSquare(square)
-        setLegalMoves(moves.map((m) => m.to))
+        setLegalMoves(moves.map((m) => ({
+          to: m.to,
+          isCapture: Boolean(m.captured)
+        })))
       }
     } else if (selectedSquare === square) {
       // Deselect
       setSelectedSquare(null)
       setLegalMoves([])
     } else {
-      // Try move
-      const success = await onMove(selectedSquare, square)
+      const moveOptions = chess.moves({ square: selectedSquare as Square, verbose: true })
+      const matchingMoves = moveOptions.filter((move) => move.to === square)
+      const targetPiece = chess.get(square as Square)
+
+      if (matchingMoves.length === 0) {
+        const selectedPiece = chess.get(selectedSquare as Square)
+        const targetMoves = chess.moves({ square: square as Square, verbose: true })
+        if (targetPiece && selectedPiece && targetPiece.color === selectedPiece.color && targetMoves.length > 0) {
+          setSelectedSquare(square)
+          setLegalMoves(targetMoves.map((m) => ({
+            to: m.to,
+            isCapture: Boolean(m.captured)
+          })))
+        }
+        return
+      }
+
+      let promotion: string | undefined
+
+      if (matchingMoves.some((move) => move.promotion)) {
+        const selectedPromotion = window.prompt('Promote to Q, R, B, or N', 'Q')?.toUpperCase()
+        promotion = ['Q', 'R', 'B', 'N'].includes(selectedPromotion || '') ? selectedPromotion : 'Q'
+      }
+
+      const success = await onMove(selectedSquare, square, promotion)
       if (success) {
         setSelectedSquare(null)
         setLegalMoves([])
@@ -60,6 +91,7 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
         const isLight = (squareIndex % 2 === 0 && Math.floor(squareIndex / 8) % 2 === 0) ||
                         (squareIndex % 2 === 1 && Math.floor(squareIndex / 8) % 2 === 1)
         const piece = chess.get(square as Square)
+        const legalMove = legalMoves.find((move) => move.to === square)
 
         return (
           <PieceSquare
@@ -68,7 +100,8 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
             piece={piece ? (piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase()) : null}
             isLight={isLight}
             isSelected={selectedSquare === square}
-            isLegal={legalMoves.includes(square)}
+            isLegal={Boolean(legalMove)}
+            isCapture={Boolean(legalMove?.isCapture)}
             onClick={handleSquareClick}
           />
         )

@@ -17,7 +17,10 @@ class ChessEngine:
             move_uci = from_square + to_square
             if promotion:
                 promotion_map = {'Q': chess.QUEEN, 'R': chess.ROOK, 'B': chess.BISHOP, 'N': chess.KNIGHT}
-                move = chess.Move.from_uci(move_uci + chess.piece_symbol(promotion_map[promotion]))
+                promotion_piece = promotion.upper()
+                if promotion_piece not in promotion_map:
+                    return False
+                move = chess.Move.from_uci(move_uci + chess.piece_symbol(promotion_map[promotion_piece]))
             else:
                 move = chess.Move.from_uci(move_uci)
 
@@ -25,13 +28,13 @@ class ChessEngine:
                 self.board.push(move)
                 return True
             return False
-        except:
+        except (KeyError, ValueError):
             return False
 
     def get_legal_moves(self) -> List[str]:
         moves = []
         for move in self.board.legal_moves:
-            moves.append(move.uci()[:4])  # Return as "e2e4" format
+            moves.append(move.uci())
         return moves
 
     def is_checkmate(self) -> bool:
@@ -58,7 +61,7 @@ class ChessEngine:
         return "ongoing"
 
     def get_move_history(self) -> List[str]:
-        return [move.uci()[:4] for move in self.board.move_stack]
+        return [move.uci() for move in self.board.move_stack]
 
     def undo_move(self) -> bool:
         if len(self.board.move_stack) > 0:

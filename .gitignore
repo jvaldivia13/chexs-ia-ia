@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 *.egg-info/
@@ -11,6 +12,10 @@ build/
 venv/
 env/
 .venv
+
+# Local tooling/cache
+.tools/
+.tmp/
 
 # IDE
 .vscode/

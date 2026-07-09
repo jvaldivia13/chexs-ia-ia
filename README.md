@@ -8,7 +8,7 @@ A web-based chess game where you can play against an AI opponent at three diffic
 - AI opponent with three difficulty levels:
   - **Easy**: Random legal moves
   - **Normal**: Piece value evaluation with basic tactics
-  - **Difficult**: Minimax algorithm with alpha-beta pruning (4-ply depth)
+  - **Difficult**: Minimax algorithm with alpha-beta pruning
 - Move history displayed in algebraic notation
 - Real-time game status (current player, game outcome)
 - Responsive design with CSS Grid
@@ -91,7 +91,7 @@ Application opens at `http://localhost:5173`
 cd backend
 pytest tests/ -v
 ```
-Runs 31 tests covering chess logic, AI, and API endpoints.
+Runs 35 tests covering chess logic, AI, and API endpoints.
 
 **Frontend Tests:**
 ```bash
@@ -118,9 +118,9 @@ gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
 
 ## API Endpoints
 
-- `POST /new_game/{difficulty}` - Start new game (difficulty: easy, normal, difficult)
-- `POST /move/{from_square}/{to_square}` - Make a move
-- `GET /game_state` - Get current game state and AI move
+- `POST /game/new` or `/api/game/new` - Start new game (difficulty: easy, normal, difficult)
+- `POST /game/move` or `/api/game/move` - Make a move; include `game_id` from the new-game response
+- `GET /game/state` or `/api/game/state?game_id=...` - Get current game state
 - `GET /health` - Health check endpoint
 
 ## Project Structure
@@ -150,9 +150,9 @@ appAjedrez/
 
 ## Testing Results
 
-- Backend: 31/31 tests passing
+- Backend: 35/35 tests passing
 - Frontend: 5/5 tests passing
-- Total: 36/36 tests passing
+- Total: 40/40 tests passing
 
 See `frontend/TESTING.md` for detailed test results.
 

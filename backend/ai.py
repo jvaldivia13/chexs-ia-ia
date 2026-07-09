@@ -15,6 +15,8 @@ def get_ai_move(engine: ChessEngine, difficulty: str) -> str:
         A move in UCI format (e.g., "e2e4")
     """
     legal_moves = engine.get_legal_moves()
+    if not legal_moves:
+        return ""
 
     if difficulty == "easy":
         return random.choice(legal_moves)
@@ -28,6 +30,11 @@ def get_ai_move(engine: ChessEngine, difficulty: str) -> str:
 
 def evaluate_position(board: chess.Board) -> float:
     """Simple board evaluation: material count + positional factors"""
+    if board.is_checkmate():
+        return -10000.0 if board.turn == chess.WHITE else 10000.0
+    if board.is_stalemate() or board.is_insufficient_material():
+        return 0.0
+
     piece_values = {
         chess.PAWN: 1,
         chess.KNIGHT: 3,
@@ -62,29 +69,21 @@ def get_normal_move(engine: ChessEngine) -> str:
     Uses minimax-like evaluation with position assessment.
     """
     legal_moves = engine.get_legal_moves()
+    ai_color = engine.board.turn
 
     best_move = None
     best_score = -float('inf')
 
     for move_uci in legal_moves:
-        # Try the move
         engine.board.push_uci(move_uci)
-
-        # Evaluate after this move + opponent's best response
-        position_score = evaluate_position(engine.board)
-
-        # Simple lookahead: check if opponent has a strong response
-        opponent_moves = [m.uci()[:4] for m in engine.board.legal_moves]
-        worst_opponent_score = float('inf')
-
-        for opp_move in opponent_moves:
-            engine.board.push_uci(opp_move)
-            opp_score = evaluate_position(engine.board)
-            worst_opponent_score = min(worst_opponent_score, opp_score)
-            engine.board.pop()
-
-        # Net score: our position minus opponent's best response
-        net_score = position_score - worst_opponent_score * 0.5
+        position_score = minimax(
+            engine.board,
+            depth=1,
+            alpha=-float('inf'),
+            beta=float('inf'),
+            is_maximizing=engine.board.turn == chess.WHITE
+        )
+        net_score = position_score if ai_color == chess.WHITE else -position_score
 
         if net_score > best_score:
             best_score = net_score
@@ -98,23 +97,25 @@ def get_normal_move(engine: ChessEngine) -> str:
 def get_difficult_move(engine: ChessEngine) -> str:
     """Minimax with alpha-beta pruning, depth 3"""
     legal_moves = engine.get_legal_moves()
+    ai_color = engine.board.turn
 
     best_move = None
     best_score = -float('inf')
-    alpha = -float('inf')
-    beta = float('inf')
-
     for move_uci in legal_moves:
         engine.board.push_uci(move_uci)
-        score = minimax(engine.board, depth=3, alpha=alpha, beta=beta, is_maximizing=False)
+        score = minimax(
+            engine.board,
+            depth=3,
+            alpha=-float('inf'),
+            beta=float('inf'),
+            is_maximizing=engine.board.turn == chess.WHITE
+        )
+        score = score if ai_color == chess.WHITE else -score
         engine.board.pop()
 
         if score > best_score:
             best_score = score
             best_move = move_uci
-
-        alpha = max(alpha, best_score)
-
     return best_move if best_move else random.choice(legal_moves)
 
 
