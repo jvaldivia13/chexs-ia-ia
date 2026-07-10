@@ -1,49 +1,113 @@
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(18, 35, 38, 0.58);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .container {
-  background: white;
-  padding: 40px;
+  width: min(760px, 100%);
+  background: #ffffff;
+  padding: 28px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
+  box-shadow: 0 18px 40px rgba(18, 52, 59, 0.22);
 }
 
-.options {
-  margin: 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+.container h2 {
+  color: #12343b;
+  font-size: 28px;
+  margin-bottom: 18px;
 }
 
-.options label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.modeTabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.modeTabs button,
+.startButton {
+  min-height: 44px;
+  border: 1px solid #9db8b2;
+  border-radius: 6px;
+  background: #f7faf8;
+  color: #12343b;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modeTabs .activeTab {
+  background: #2f6f73;
+  border-color: #2f6f73;
+  color: #ffffff;
+}
+
+.agentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.agentPanel {
+  border: 1px solid #d7e1dd;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfcfb;
+}
+
+.agentPanel h3 {
+  color: #12343b;
+  font-size: 17px;
+  margin-bottom: 14px;
+}
+
+.agentPanel label {
+  display: grid;
+  gap: 6px;
+  color: #3f5255;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.agentPanel input,
+.agentPanel select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #bdcbc7;
+  border-radius: 6px;
+  color: #12343b;
+  background: #ffffff;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.modelName {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #edf5f2;
+  color: #24545a;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .startButton {
-  padding: 12px 30px;
-  background-color: #2c5aa0;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
+  width: 100%;
   margin-top: 20px;
+  background: #f2c14e;
+  border-color: #d8a93d;
 }
 
 .startButton:hover {
-  background-color: #1e4170;
+  background: #e3b33f;
 }

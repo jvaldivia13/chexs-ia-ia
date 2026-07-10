@@ -9,11 +9,11 @@ interface Props {
 
 export const GameStatusDisplay: React.FC<Props> = ({ status, playerInCheck }) => {
   const getStatusText = () => {
-    if (playerInCheck) return 'You are in check!'
-    if (status === 'checkmate') return 'Checkmate! AI wins.'
-    if (status === 'stalemate') return 'Stalemate. Draw.'
-    if (status === 'draw') return 'Draw.'
-    return 'Game in progress'
+    if (playerInCheck) return 'Blancas en jaque'
+    if (status === 'checkmate') return 'Jaque mate'
+    if (status === 'stalemate') return 'Ahogado. Tablas.'
+    if (status === 'draw') return 'Tablas.'
+    return 'Partida en curso'
   }
 
   return (

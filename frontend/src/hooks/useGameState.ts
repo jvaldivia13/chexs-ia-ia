@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { GameState, Difficulty } from '../types/chess'
+import type { Difficulty, GameState, NewGameConfig } from '../types/chess'
 import { api } from '../services/api'
 
 export function useGameState() {
@@ -8,18 +8,21 @@ export function useGameState() {
   const [moveHistory, setMoveHistory] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
-  const newGame = useCallback(async (selectedDifficulty: Difficulty) => {
+  const newGame = useCallback(async (config: NewGameConfig) => {
     setLoading(true)
     try {
-      const response = await api.newGame(selectedDifficulty)
-      setDifficulty(selectedDifficulty)
+      const response = await api.newGame(config)
+      setDifficulty(config.difficulty)
       setGameState({
         gameId: response.game_id,
         fen: response.board_fen,
         turn: 'white',
         status: 'ongoing',
         legalMoves: [],
-        playerInCheck: false
+        playerInCheck: false,
+        mode: response.mode,
+        whiteAgent: response.white_agent,
+        blackAgent: response.black_agent
       })
       setMoveHistory([])
     } catch (error) {
@@ -38,22 +41,22 @@ export function useGameState() {
     setLoading(true)
     try {
       console.log('Making move:', { from, to, promotion })
-      const response = await api.makeMove(gameState.gameId, from, to, promotion)
+      const response = await api.makeMove(gameState.gameId, from, to, promotion, false)
       console.log('Move response:', response)
 
       setGameState({
         gameId: gameState.gameId,
         fen: response.board_fen,
-        turn: response.game_status === 'ongoing' ? 'white' : 'black',
+        turn: response.turn,
         status: response.game_status,
         legalMoves: response.legal_moves,
-        playerInCheck: response.player_in_check
+        playerInCheck: response.player_in_check,
+        mode: gameState.mode,
+        whiteAgent: gameState.whiteAgent,
+        blackAgent: gameState.blackAgent
       })
 
-      const newMoves = [...moveHistory]
-      if (response.player_move) newMoves.push(response.player_move)
-      if (response.ai_move) newMoves.push(response.ai_move)
-      setMoveHistory(newMoves)
+      setMoveHistory(response.move_history)
 
       return true
     } catch (error) {
@@ -62,7 +65,36 @@ export function useGameState() {
     } finally {
       setLoading(false)
     }
-  }, [gameState, moveHistory])
+  }, [gameState])
+
+  const playAgentTurn = useCallback(async () => {
+    if (!gameState || gameState.status !== 'ongoing') {
+      return false
+    }
+
+    setLoading(true)
+    try {
+      const response = await api.playAgentTurn(gameState.gameId)
+      setGameState({
+        gameId: gameState.gameId,
+        fen: response.board_fen,
+        turn: response.turn,
+        status: response.game_status,
+        legalMoves: response.legal_moves,
+        playerInCheck: response.player_in_check,
+        mode: gameState.mode,
+        whiteAgent: gameState.whiteAgent,
+        blackAgent: gameState.blackAgent
+      })
+      setMoveHistory(response.move_history)
+      return Boolean(response.agent_move)
+    } catch (error) {
+      console.error('Agent turn failed:', error)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [gameState])
 
   const undoMove = useCallback(() => {
     // Undo is complex—would require state tracking on backend
@@ -77,6 +109,7 @@ export function useGameState() {
     loading,
     newGame,
     makeMove,
+    playAgentTurn,
     undoMove
   }
 }

@@ -33,6 +33,22 @@ body {
   align-items: center;
 }
 
+.agent-summary {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 6px;
+  color: #31484c;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.turn-indicator {
+  color: #12343b;
+  font-weight: 600;
+  min-height: 24px;
+  margin-bottom: 10px;
+}
+
 .history-section {
   flex: 0 0 250px;
 }
