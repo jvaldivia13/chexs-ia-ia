@@ -1,361 +1,259 @@
-# Development Setup Guide
+# Guia de Setup
 
-This guide provides step-by-step instructions for setting up and running the Chess Application in development mode.
+Esta guia explica como instalar, ejecutar, probar y depurar el proyecto en desarrollo.
 
-## Prerequisites
+## 1. Requisitos
 
-Before you begin, ensure you have installed:
-- **Node.js 18+** with npm (download from https://nodejs.org/)
-- **Python 3.9+** (download from https://www.python.org/)
-- **Git** (optional, for version control)
+Instala:
 
-Verify installations:
-```bash
+- Python 3.9 o superior.
+- Node.js 18 o superior.
+- npm.
+- Git, opcional pero recomendado.
+
+Verifica versiones:
+
+```powershell
+python --version
 node --version
 npm --version
-python --version
 ```
 
-## Project Location
+## 2. Backend
 
-```bash
-cd d:\appAjedrez
-```
+Desde la raiz del proyecto:
 
-## Backend Setup
-
-### 1. Navigate to Backend Directory
-```bash
-cd d:\appAjedrez\backend
-```
-
-### 2. Create Virtual Environment
-```bash
+```powershell
+cd backend
 python -m venv venv
-```
-
-### 3. Activate Virtual Environment
-
-**Windows Command Prompt:**
-```bash
 venv\Scripts\activate
-```
-
-**Windows PowerShell:**
-```bash
-venv\Scripts\Activate.ps1
-```
-
-**macOS/Linux:**
-```bash
-source venv/bin/activate
-```
-
-### 4. Install Dependencies
-```bash
 pip install -r requirements.txt
 ```
 
-### 5. Verify Installation
-```bash
-python -c "import fastapi; import chess; print('✓ Dependencies installed')"
+Verifica dependencias:
+
+```powershell
+python -c "import fastapi, chess, httpx; print('Backend dependencies OK')"
 ```
 
-## Frontend Setup
+Ejecuta el backend:
 
-### 1. Navigate to Frontend Directory
-```bash
-cd d:\appAjedrez\frontend
+```powershell
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 2. Install Dependencies
-```bash
+URLs:
+
+- API: <http://127.0.0.1:8000>
+- Docs Swagger: <http://127.0.0.1:8000/docs>
+- Health check: <http://127.0.0.1:8000/health>
+
+## 3. Frontend
+
+En otra terminal:
+
+```powershell
+cd frontend
 npm install
-```
-
-### 3. Verify Installation
-```bash
-npm list react vite vitest
-```
-
-## Running Development Servers
-
-### Start Backend (Port 8000)
-
-**Terminal/Command Prompt 1:**
-```bash
-cd d:\appAjedrez\backend
-venv\Scripts\activate
-python -m uvicorn main:app --reload
-```
-
-You should see:
-```
-INFO:     Uvicorn running on http://127.0.0.1:8000
-```
-
-### Start Frontend (Port 5173)
-
-**Terminal/Command Prompt 2:**
-```bash
-cd d:\appAjedrez\frontend
 npm run dev
 ```
 
-You should see:
-```
-VITE v8.x.x  ready in xxx ms
-➜  Local:   http://localhost:5173/
-```
+URL:
 
-### Access the Application
+- App: <http://localhost:5173>
 
-Open your browser and navigate to:
-```
-http://localhost:5173
-```
+El frontend usa Vite y proxya `/api/*` hacia el backend en el puerto `8000`.
 
-## Testing
+## 4. Configuracion LLM
 
-### Backend Tests
+El juego puede funcionar sin claves usando el motor `local`. Para usar OpenAI y DeepSeek, crea un archivo `.env` en la raiz:
 
-From the `backend` directory with venv activated:
-
-```bash
-pytest tests/ -v
+```env
+OPENAI_API_KEY=tu_api_key_openai
+DEEPSEEK_API_KEY=tu_api_key_deepseek
 ```
 
-Expected output:
-```
-======================== 31 passed, 1 warning in 1.08s ========================
-```
+Tambien puedes usar variables del sistema:
 
-### Frontend Tests
-
-From the `frontend` directory:
-
-```bash
-npm run test
+```powershell
+setx OPENAI_API_KEY "tu_api_key_openai"
+setx DEEPSEEK_API_KEY "tu_api_key_deepseek"
 ```
 
-Expected output:
-```
-Test Files  2 passed (2)
-Tests  5 passed (5)
-```
+Notas:
 
-### Run All Tests
+- Despues de `setx`, reinicia terminal o VS Code.
+- No subas `.env`; ya esta en `.gitignore`.
+- Si una API key se expone, revocala y genera una nueva.
 
-To run both backend and frontend tests:
+## 5. Modos de Juego
 
-```bash
-# Backend
-cd d:\appAjedrez\backend
+### Humano vs IA
+
+- El humano juega con blancas.
+- La IA juega con negras.
+- La respuesta IA se ejecuta como turno separado para que pueda visualizarse.
+
+### IA vs IA
+
+- Ambos agentes juegan automaticamente.
+- Hay una pausa minima de 2 segundos entre jugadas automaticas.
+- Cada agente puede usar motor local, OpenAI o DeepSeek.
+
+## 6. Motores de IA
+
+| Motor | Requiere key | Modelo default | Descripcion |
+| --- | --- | --- | --- |
+| `local` | No | N/A | Algoritmos internos: random, evaluacion, minimax. |
+| `openai` | Si | `o4-mini` | Razonamiento sobre posicion y jugadas legales. |
+| `deepseek` | Si | `deepseek-reasoner` | Razonamiento via DeepSeek Chat API. |
+
+El backend siempre valida que la jugada elegida por un LLM este en la lista legal antes de aplicarla.
+
+## 7. Tests
+
+Backend:
+
+```powershell
+cd backend
 venv\Scripts\activate
-pytest tests/ -v
-
-# Frontend
-cd d:\appAjedrez\frontend
-npm run test
+python -m pytest tests -q
 ```
 
-## Building for Production
+Frontend:
 
-### Frontend Build
+```powershell
+cd frontend
+npm run test -- --run
+```
 
-```bash
-cd d:\appAjedrez\frontend
+Build:
+
+```powershell
+cd frontend
 npm run build
 ```
 
-Output: `frontend/dist/` directory with optimized static files
+Resultados actuales esperados:
 
-### Backend Production Server
+- Backend: 35 tests pasando.
+- Frontend: 6 tests pasando.
+- Build frontend: exitoso.
 
-**Option 1: Using Gunicorn**
-```bash
-cd d:\appAjedrez\backend
-venv\Scripts\activate
-pip install gunicorn
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+## 8. API
+
+### Crear Partida
+
+```http
+POST /api/game/new
 ```
 
-**Option 2: Using Uvicorn with Production Settings**
-```bash
-cd d:\appAjedrez\backend
-venv\Scripts\activate
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+Ejemplo:
+
+```json
+{
+  "difficulty": "normal",
+  "mode": "ai_vs_ai",
+  "white_agent": {
+    "name": "Atlas",
+    "persona": "balanced",
+    "expertise": "normal",
+    "provider": "openai",
+    "model": "o4-mini"
+  },
+  "black_agent": {
+    "name": "Nyx",
+    "persona": "tactical",
+    "expertise": "normal",
+    "provider": "deepseek",
+    "model": "deepseek-reasoner"
+  }
+}
 ```
 
-## Project Structure
+### Jugada Humana
 
-```
-d:\appAjedrez\
-├── backend/
-│   ├── main.py                    # FastAPI entry point
-│   ├── chess_engine.py            # Chess logic wrapper around python-chess
-│   ├── game_state.py              # Game state management
-│   ├── ai.py                      # AI implementations (Easy, Normal, Difficult)
-│   ├── models.py                  # Pydantic request/response models
-│   ├── requirements.txt           # Python dependencies
-│   ├── tests/
-│   │   ├── test_chess_logic.py   # Chess engine tests (8 tests)
-│   │   ├── test_ai.py            # AI algorithm tests (6 tests)
-│   │   └── test_endpoints.py     # API endpoint tests (17 tests)
-│   └── venv/                      # Virtual environment (created)
-│
-├── frontend/
-│   ├── src/
-│   │   ├── App.tsx                # Main application component
-│   │   ├── main.tsx               # React entry point
-│   │   ├── components/
-│   │   │   ├── Board.tsx          # Chessboard component
-│   │   │   ├── PieceSquare.tsx    # Individual square component
-│   │   │   ├── MoveHistory.tsx    # Move history display
-│   │   │   ├── GameStatus.tsx     # Game status display
-│   │   │   ├── GameControls.tsx   # Control buttons
-│   │   │   ├── DifficultySelect.tsx # Difficulty selector
-│   │   │   └── __tests__/
-│   │   │       ├── Board.test.tsx (2 tests)
-│   │   │       └── MoveHistory.test.tsx (3 tests)
-│   │   └── styles/
-│   │       ├── Board.module.css
-│   │       ├── History.module.css
-│   │       └── other CSS modules
-│   ├── package.json               # Node dependencies
-│   ├── vite.config.ts             # Vite dev server config
-│   ├── vitest.config.ts           # Vitest testing config
-│   ├── TESTING.md                 # Test results report
-│   └── node_modules/              # Dependencies (created)
-│
-├── README.md                      # Main documentation
-├── SETUP.md                       # This file
-└── .gitignore                     # Git configuration
+```http
+POST /api/game/move
 ```
 
-## Common Tasks
-
-### Add a New Backend Dependency
-```bash
-cd backend
-venv\Scripts\activate
-pip install package_name
-pip freeze > requirements.txt
+```json
+{
+  "game_id": "uuid",
+  "from_square": "e2",
+  "to_square": "e4",
+  "promotion": null,
+  "auto_reply": false
+}
 ```
 
-### Add a New Frontend Dependency
-```bash
-cd frontend
-npm install package-name
+### Turno de Agente
+
+```http
+POST /api/game/agent-turn
 ```
 
-### Clean Up Dependencies
-```bash
-# Backend
-cd backend
-venv\Scripts\activate
-pip cache purge
-
-# Frontend
-cd frontend
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
+```json
+{
+  "game_id": "uuid"
+}
 ```
 
-### Debugging
+### Estado
 
-**Backend Logs:**
-- Uvicorn logs will appear in the terminal where you started it
-- Check for errors in the terminal running `python -m uvicorn main:app --reload`
-
-**Frontend Logs:**
-- Check browser console (F12 > Console tab)
-- Vite dev server logs appear in the terminal
-
-**Python Debugging:**
-```python
-# In main.py or other files
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-logger.debug(f"Message: {variable}")
+```http
+GET /api/game/state?game_id=uuid
 ```
 
-## Stopping Servers
+## 9. Troubleshooting
 
-- Press `Ctrl+C` in each terminal running a server
-- Both servers will gracefully shut down
+### `npm` no se reconoce
 
-## Environment Variables
+Instala Node.js LTS desde <https://nodejs.org/>. En Windows, reinicia la terminal despues de instalar.
 
-Currently, the application uses default settings:
-- Backend: localhost:8000
-- Frontend: localhost:5173
-- CORS: Enabled for localhost:5173
+### PowerShell bloquea `npm.ps1`
 
-To modify settings, edit in `backend/main.py` (CORS configuration).
+Usa `npm.cmd`:
 
-## Troubleshooting
-
-### "Module not found" errors
-```bash
-# Backend
-cd backend
-venv\Scripts\activate
-pip install -r requirements.txt
-
-# Frontend
-cd frontend
-npm install
+```powershell
+& "C:\Program Files\nodejs\npm.cmd" run dev
 ```
 
-### Port already in use (8000 or 5173)
-```bash
-# Find process using port 8000
-netstat -ano | findstr :8000
+### Puerto ocupado
 
-# Kill process (replace PID with actual process ID)
+```powershell
+netstat -ano | findstr ":5173 :8000"
 taskkill /PID <PID> /F
-
-# Or change Vite port in venv/vite.config.ts
 ```
 
-### Virtual environment not activating
-```bash
-# Recreate it
-rmdir /s /q venv
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+### El LLM no juega
+
+Revisa:
+
+- `.env` existe en la raiz.
+- `OPENAI_API_KEY` o `DEEPSEEK_API_KEY` estan configuradas.
+- Reiniciaste terminal/VS Code si usaste `setx`.
+- El backend fue reiniciado despues de cambiar `.env`.
+
+Si la llamada LLM falla, el juego usara fallback local.
+
+## 10. Comandos Utiles
+
+Detener servidores en Windows:
+
+```powershell
+netstat -ano | findstr ":5173 :8000"
+taskkill /PID <PID> /F
 ```
 
-### Tests failing
-1. Ensure all dependencies are installed
-2. Check that backend is running for API tests
-3. Review error messages in test output
-4. Run individual test files to isolate issues
+Ver estado de Git:
 
-## Additional Resources
+```powershell
+git status --short
+```
 
-- **FastAPI Documentation**: https://fastapi.tiangolo.com/
-- **React Documentation**: https://react.dev/
-- **Python Chess Documentation**: https://python-chess.readthedocs.io/
-- **Vite Documentation**: https://vitejs.dev/
-- **Vitest Documentation**: https://vitest.dev/
+Limpiar caches de tests:
 
-## Getting Help
-
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Review error messages in terminal/console
-3. Verify all prerequisites are installed
-4. Ensure you're in the correct directory
-5. Try restarting the development servers
-
----
-
-**Setup Date**: June 27, 2026
-**Python Version**: 3.9+
-**Node.js Version**: 18+
+```powershell
+Remove-Item -Recurse -Force backend\.pytest_cache, frontend\dist
+```

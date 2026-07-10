@@ -1,32 +1,115 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend React + TypeScript + Vite para la aplicacion **Chexs IA vs IA**.
 
-Currently, two official plugins are available:
+## Responsabilidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Renderizar el tablero de ajedrez.
+- Permitir seleccion de modo:
+  - `Humano vs IA`
+  - `IA vs IA`
+- Configurar agentes:
+  - Nombre.
+  - Perfil.
+  - Expertise.
+  - Motor/modelo.
+- Mostrar historial de jugadas.
+- Deshabilitar el tablero cuando corresponde:
+  - Mientras carga.
+  - Durante turnos automaticos.
+  - En modo `IA vs IA`.
+- Ejecutar el loop visual de agentes con pausa minima de 2 segundos entre jugadas.
 
-## React Compiler
+## Estructura
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```text
+frontend/
++-- src/
+|   +-- components/
+|   |   +-- Board.tsx
+|   |   +-- PieceSquare.tsx
+|   |   +-- DifficultySelect.tsx
+|   |   +-- GameControls.tsx
+|   |   +-- GameStatus.tsx
+|   |   +-- MoveHistory.tsx
+|   +-- hooks/
+|   |   +-- useGameState.ts
+|   +-- pages/
+|   |   +-- GamePage.tsx
+|   +-- services/
+|   |   +-- api.ts
+|   +-- styles/
+|   +-- types/
+|   +-- App.tsx
+|   +-- main.tsx
++-- package.json
++-- vite.config.ts
++-- vitest.config.ts
+```
 
-## Expanding the Oxlint configuration
+## Scripts
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+```powershell
+npm install
+npm run dev
+npm run build
+npm run test -- --run
+```
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+## Desarrollo
+
+El servidor Vite corre en:
+
+<http://localhost:5173>
+
+El proxy de Vite envia `/api/*` al backend:
+
+<http://localhost:8000>
+
+Configuracion relevante en `vite.config.ts`:
+
+```ts
+server: {
+  port: 5173,
+  proxy: {
+    '^/api/': {
+      target: 'http://localhost:8000',
+      rewrite: (path) => path.replace(/^\/api/, '')
+    }
   }
 }
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Motores Mostrados en UI
+
+El selector de agentes permite:
+
+| Label | Provider | Model |
+| --- | --- | --- |
+| Local | `local` | `null` |
+| OpenAI o4-mini | `openai` | `o4-mini` |
+| DeepSeek Reasoner | `deepseek` | `deepseek-reasoner` |
+
+Defaults actuales:
+
+- Blancas: OpenAI `o4-mini`.
+- Negras: DeepSeek `deepseek-reasoner`.
+
+## Tests
+
+```powershell
+npm run test -- --run
+```
+
+Estado actual:
+
+- 2 archivos de test.
+- 6 tests pasando.
+
+## Build
+
+```powershell
+npm run build
+```
+
+El output queda en `frontend/dist/`, que esta ignorado por Git.

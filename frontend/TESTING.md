@@ -1,95 +1,111 @@
-# Chess Application - Testing Report
+# Testing Report
 
-## Backend Tests (Python - pytest)
+Reporte de pruebas automatizadas y checks manuales para **Chexs IA vs IA**.
 
-### Chess Logic Tests
-- test_init_board_is_start_position: PASSED
-- test_make_valid_move: PASSED
-- test_make_invalid_move: PASSED
-- test_get_legal_moves_from_start: PASSED
-- test_detect_checkmate: PASSED
-- test_detect_stalemate: PASSED
-- test_castling: PASSED
-- test_en_passant: PASSED
-**Total: 8/8 passing**
+## Backend
 
-### AI Implementation Tests
-- test_easy_ai_returns_legal_move: PASSED
-- test_easy_ai_consistent_with_board: PASSED
-- test_normal_ai_prefers_capturing_move: PASSED
-- test_normal_ai_avoids_hanging_piece: PASSED
-- test_difficult_ai_returns_legal_move: PASSED
-- test_difficult_ai_plays_reasonable_opening: PASSED
-**Total: 6/6 passing**
+Comando:
 
-### API Endpoints Tests
-- test_new_game_endpoint: PASSED
-- test_new_game_normal_difficulty: PASSED
-- test_new_game_difficult_difficulty: PASSED
-- test_new_game_invalid_difficulty: PASSED
-- test_move_endpoint_valid_move: PASSED
-- test_move_endpoint_valid_move_with_fen_update: PASSED
-- test_move_endpoint_invalid_move: PASSED
-- test_move_endpoint_move_without_game: PASSED
-- test_game_state_endpoint: PASSED
-- test_game_state_endpoint_no_game: PASSED
-- test_game_state_after_move: PASSED
-- test_full_game_sequence: PASSED
-- test_sequential_games: PASSED
-- test_health_check: PASSED
-- test_move_response_structure: PASSED
-- test_game_state_response_structure: PASSED
-- test_new_game_response_structure: PASSED
-**Total: 17/17 passing**
+```powershell
+cd backend
+venv\Scripts\activate
+python -m pytest tests -q
+```
 
-**Backend Total: 31/31 passing**
+Resultado actual:
 
-## Frontend Tests (TypeScript - vitest)
+```text
+35 passed, 1 warning
+```
 
-### Board Component Tests
-- renders 64 squares: PASSED
-- displays pieces in starting position: PASSED
-**Total: 2/2 passing**
+### Cobertura Backend
 
-### MoveHistory Component Tests
-- displays move pairs correctly: PASSED
-- displays move numbers: PASSED
-- handles empty move list: PASSED
-**Total: 3/3 passing**
+| Area | Tests | Estado |
+| --- | ---: | --- |
+| Motor de ajedrez | 9 | Passing |
+| IA local | 8 | Passing |
+| API endpoints | 18 | Passing |
+| **Total** | **35** | **Passing** |
 
-**Frontend Total: 5/5 passing**
+Incluye validacion de:
 
-## Test Summary
+- Posicion inicial.
+- Jugadas validas e invalidas.
+- Castling.
+- En passant.
+- Promocion.
+- Jaque mate.
+- Ahogado.
+- IAs `easy`, `normal`, `difficult`.
+- Creacion de partidas.
+- Jugadas con `game_id`.
+- Estado de partida.
+- Endpoint `health`.
 
-| Category | Passed | Total | Status |
-|----------|--------|-------|--------|
-| Backend - Chess Logic | 8 | 8 | ✓ |
-| Backend - AI | 6 | 6 | ✓ |
-| Backend - Endpoints | 17 | 17 | ✓ |
-| Frontend - Board | 2 | 2 | ✓ |
-| Frontend - MoveHistory | 3 | 3 | ✓ |
-| **Overall** | **36** | **36** | **✓** |
+## Frontend
 
-## Manual End-to-End Testing
+Comando:
 
-### Game Flow Verification
-- ✓ Backend starts on port 8000 without errors
-- ✓ Frontend starts on port 5173 without errors
-- ✓ Difficulty selection works (Easy, Normal, Difficult)
-- ✓ Board renders correctly with initial position
-- ✓ Piece selection highlights legal moves
-- ✓ Player can make valid moves
-- ✓ AI responds to player moves automatically
-- ✓ Game status displays correctly (whose turn, game status)
-- ✓ Move history displays correctly in algebraic notation
-- ✓ New game flow works (resets board, allows difficulty change)
-- ✓ Multiple consecutive games work
-- ✓ Game ends correctly at checkmate/stalemate
+```powershell
+cd frontend
+npm run test -- --run
+```
 
-## Conclusion
+Resultado actual:
 
-All 36 automated tests are passing (31 backend + 5 frontend).
-Manual end-to-end testing confirms full game flow is working correctly.
-Application is ready for deployment.
+```text
+Test Files  2 passed (2)
+Tests       6 passed (6)
+```
 
-**Status: READY FOR PRODUCTION**
+### Cobertura Frontend
+
+| Area | Tests | Estado |
+| --- | ---: | --- |
+| Board | 3 | Passing |
+| MoveHistory | 3 | Passing |
+| **Total** | **6** | **Passing** |
+
+Incluye validacion de:
+
+- Render de 64 casillas.
+- Render del tablero.
+- Captura legal con caballo.
+- Historial de jugadas por pares.
+- Numeracion de movimientos.
+- Estado vacio del historial.
+
+## Build
+
+Comando:
+
+```powershell
+cd frontend
+npm run build
+```
+
+Resultado actual:
+
+```text
+vite build: success
+```
+
+## Checks Manuales
+
+Checklist recomendado antes de publicar:
+
+- [ ] Backend responde en <http://127.0.0.1:8000/health>.
+- [ ] Frontend responde en <http://localhost:5173>.
+- [ ] Se puede iniciar `Humano vs IA`.
+- [ ] Se puede iniciar `IA vs IA`.
+- [ ] Blancas muestran `openai/o4-mini` por defecto.
+- [ ] Negras muestran `deepseek/deepseek-reasoner` por defecto.
+- [ ] El tablero se actualiza despues de cada jugada.
+- [ ] Las jugadas automaticas esperan al menos 2 segundos.
+- [ ] Si falta una API key, el juego continua con fallback local.
+- [ ] El historial de movimientos se actualiza.
+- [ ] La UI no muestra API keys.
+
+## Nota Sobre LLMs
+
+Las pruebas automatizadas no llaman a OpenAI ni a DeepSeek. Esto evita consumo de tokens y hace que la suite sea deterministica. La integracion LLM se valida manualmente con API keys locales en `.env` o variables de entorno.
