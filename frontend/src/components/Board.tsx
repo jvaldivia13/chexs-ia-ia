@@ -12,12 +12,14 @@ interface BoardProps {
   fen: string
   onMove: (from: string, to: string, promotion?: string) => Promise<boolean>
   disabled: boolean
+  lastMove?: string
 }
 
-export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
+export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled, lastMove }) => {
   const [chess, setChess] = useState(new Chess(fen))
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
   const [legalMoves, setLegalMoves] = useState<LegalMoveHint[]>([])
+  const [visibleLastMove, setVisibleLastMove] = useState<string | null>(null)
 
   useEffect(() => {
     const newChess = new Chess(fen)
@@ -25,6 +27,20 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
     setSelectedSquare(null)
     setLegalMoves([])
   }, [fen])
+
+  useEffect(() => {
+    if (!lastMove || lastMove.length < 4) {
+      setVisibleLastMove(null)
+      return
+    }
+
+    setVisibleLastMove(lastMove)
+    const timer = window.setTimeout(() => {
+      setVisibleLastMove(null)
+    }, 2000)
+
+    return () => window.clearTimeout(timer)
+  }, [lastMove])
 
   const handleSquareClick = async (square: string) => {
     if (disabled) return
@@ -92,6 +108,8 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
                         (squareIndex % 2 === 1 && Math.floor(squareIndex / 8) % 2 === 1)
         const piece = chess.get(square as Square)
         const legalMove = legalMoves.find((move) => move.to === square)
+        const lastMoveFrom = visibleLastMove?.slice(0, 2)
+        const lastMoveTo = visibleLastMove?.slice(2, 4)
 
         return (
           <PieceSquare
@@ -102,6 +120,8 @@ export const Board: React.FC<BoardProps> = ({ fen, onMove, disabled }) => {
             isSelected={selectedSquare === square}
             isLegal={Boolean(legalMove)}
             isCapture={Boolean(legalMove?.isCapture)}
+            isLastMoveFrom={square === lastMoveFrom}
+            isLastMoveTo={square === lastMoveTo}
             onClick={handleSquareClick}
           />
         )

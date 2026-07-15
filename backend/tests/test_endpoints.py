@@ -334,6 +334,24 @@ def test_game_state_response_structure():
     assert data["turn"] in ["white", "black"]
 
 
+def test_ai_move_failure_does_not_pollute_move_history(monkeypatch):
+    """If the AI's chosen move can't actually be applied to the board,
+    the response and move_history must not claim it happened."""
+    monkeypatch.setattr(main, "get_ai_move", lambda engine, difficulty: "a1a1")
+
+    client.post("/api/game/new", json={"difficulty": "easy"})
+    response = client.post("/api/game/move", json={
+        "from_square": "e2",
+        "to_square": "e4",
+        "promotion": None
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ai_move"] is None
+    assert data["move_history"] == ["e2e4"]
+
+
 def test_new_game_response_structure():
     """Test that new game response has correct structure."""
     response = client.post("/api/game/new", json={"difficulty": "difficult"})

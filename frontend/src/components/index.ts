@@ -1,5 +1,6 @@
 export { Board } from './Board'
 export { PieceSquare } from './PieceSquare'
+export { TurnTimers } from './TurnTimers'
 export { MoveHistory } from './MoveHistory'
 export { GameControls } from './GameControls'
 export { DifficultySelect } from './DifficultySelect'

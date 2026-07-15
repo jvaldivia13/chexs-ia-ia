@@ -21,6 +21,18 @@ body {
   color: #333;
 }
 
+.error-banner {
+  max-width: 600px;
+  margin: 0 auto 20px;
+  padding: 12px 16px;
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ef9a9a;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+}
+
 .game-layout {
   display: flex;
   gap: 30px;
@@ -47,6 +59,81 @@ body {
   font-weight: 600;
   min-height: 24px;
   margin-bottom: 10px;
+}
+
+.turn-timers {
+  width: min(480px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.player-timer {
+  padding: 10px 12px;
+  border: 1px solid #cbd8da;
+  border-radius: 8px;
+  background: #fff;
+  color: #31484c;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.player-timer--active {
+  border-color: #167d72;
+  box-shadow: 0 0 0 2px rgb(22 125 114 / 14%);
+}
+
+.player-timer__heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.player-timer__heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-timer__piece {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid #52666a;
+}
+
+.player-timer__piece--white { background: #fff; }
+.player-timer__piece--black { background: #263238; }
+
+.player-timer__live {
+  margin-left: auto;
+  color: #167d72;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.player-timer__current {
+  margin: 5px 0 3px;
+  font-size: 24px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #12343b;
+}
+
+.player-timer__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  color: #687d81;
+  font-size: 11px;
+}
+
+@media (max-width: 480px) {
+  .turn-timers { grid-template-columns: 1fr; }
 }
 
 .history-section {

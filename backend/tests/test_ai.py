@@ -1,6 +1,7 @@
+import chess
 import pytest
 from chess_engine import ChessEngine
-from ai import get_ai_move
+from ai import get_ai_move, evaluate_position, _king_hunt_bonus
 
 
 def test_easy_ai_returns_legal_move():
@@ -75,3 +76,27 @@ def test_difficult_ai_black_captures_high_value_piece():
     engine = ChessEngine()
     engine.set_fen("4k3/8/5n2/8/4Q3/8/8/4K3 b - - 0 1")
     assert get_ai_move(engine, "difficult") == "f6e4"
+
+
+def test_king_hunt_bonus_disabled_without_decisive_material():
+    board = chess.Board("k7/8/8/8/8/8/8/4K3 w - - 0 1")
+    assert _king_hunt_bonus(board, material_score=1.0) == 0.0
+
+
+def test_king_hunt_bonus_rewards_pushing_lone_king_to_edge():
+    # White has a decisive material lead (a queen) and a fixed king square,
+    # so only the black king's distance from the edge varies between boards.
+    center_board = chess.Board("8/8/8/4k3/8/3Q4/8/4K3 w - - 0 1")
+    corner_board = chess.Board("k7/8/8/8/8/3Q4/8/4K3 w - - 0 1")
+
+    center_bonus = _king_hunt_bonus(center_board, material_score=9.0)
+    corner_bonus = _king_hunt_bonus(corner_board, material_score=9.0)
+
+    assert corner_bonus > center_bonus
+
+
+def test_evaluate_position_prefers_cornering_lone_king():
+    center_board = chess.Board("8/8/8/4k3/8/3Q4/8/4K3 w - - 0 1")
+    corner_board = chess.Board("k7/8/8/8/8/3Q4/8/4K3 w - - 0 1")
+
+    assert evaluate_position(corner_board) > evaluate_position(center_board)

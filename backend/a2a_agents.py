@@ -4,9 +4,51 @@ from typing import Any, Dict, Optional
 
 import chess
 
-from ai import evaluate_position, get_ai_move
+from ai import evaluate_position, get_ai_move, minimax
 from chess_engine import ChessEngine
 from llm_chess import choose_llm_move
+
+
+# Below this net material swing (in pawns), an LLM-proposed move is treated as
+# a sound choice. LLM moves come from a text prompt with no material-aware
+# search behind them at all, so they need a lightweight tactical safety net
+# before being trusted -- this is the same magnitude as "hanging a minor piece".
+_BLUNDER_THRESHOLD = 2.0
+
+_PERSONA_TOLERANCE = {
+    "defensive": 0.20,
+    "balanced": 0.35,
+    "aggressive": 0.60,
+    "tactical": 0.75,
+}
+_CANDIDATE_COUNT = 3
+
+
+def _is_blunder(engine: ChessEngine, move_uci: str, threshold: float = _BLUNDER_THRESHOLD) -> bool:
+    """True if the opponent's best reply to this move swings material against
+    the mover by more than `threshold`, with no compensation (e.g. delivering
+    checkmate is never a blunder regardless of material given up)."""
+    move = chess.Move.from_uci(move_uci)
+    mover_color = engine.board.turn
+    before = evaluate_position(engine.board)
+
+    engine.board.push(move)
+    if engine.board.is_checkmate():
+        engine.board.pop()
+        return False
+
+    reply_score = minimax(
+        engine.board,
+        depth=1,
+        alpha=-float('inf'),
+        beta=float('inf'),
+        is_maximizing=engine.board.turn == chess.WHITE,
+    )
+    engine.board.pop()
+
+    net_before = before if mover_color == chess.WHITE else -before
+    net_after = reply_score if mover_color == chess.WHITE else -reply_score
+    return (net_after - net_before) < -threshold
 
 
 VALID_PERSONAS = {"balanced", "aggressive", "defensive", "tactical"}
@@ -58,9 +100,15 @@ def build_turn_message(game, agent_color: str) -> A2AMessage:
 def select_agent_move(engine: ChessEngine, profile: dict) -> str:
     provider = profile.get("provider", "local")
     if provider != "local":
-        llm_move = choose_llm_move(engine, profile)
-        if llm_move in engine.get_legal_moves():
-            return llm_move
+        candidates = analyze_move_candidates(engine, profile.get("expertise", "normal"))
+        llm_move = choose_llm_move(engine, {**profile, "_candidates": candidates})
+        candidate_scores = {candidate["move"]: candidate["score"] for candidate in candidates}
+        if llm_move in candidate_scores and candidates:
+            tolerance = _PERSONA_TOLERANCE.get(profile.get("persona", "balanced"), 0.35)
+            if candidates[0]["score"] - candidate_scores[llm_move] <= tolerance and not _is_blunder(engine, llm_move):
+                return llm_move
+        if candidates:
+            return candidates[0]["move"]
 
     expertise = profile.get("expertise", "normal")
     persona = profile.get("persona", "balanced")
@@ -107,18 +155,119 @@ def select_agent_move(engine: ChessEngine, profile: dict) -> str:
     return scored_moves[0][1]
 
 
+def analyze_move_candidates(engine: ChessEngine, expertise: str, top_k: int = _CANDIDATE_COUNT) -> list[dict]:
+    """Produce a small set of calculated moves for LLM deliberation."""
+    depth = {"easy": 1, "normal": 2, "difficult": 3}.get(expertise, 2)
+    board = engine.board
+    mover = board.turn
+    before_material = _material_score(board)
+    candidates = []
+
+    for move in list(board.legal_moves):
+        is_capture = board.is_capture(move)
+        board.push(move)
+        try:
+            score, continuation = _search_with_pv(board, depth - 1, -float("inf"), float("inf"))
+            mover_score = score if mover == chess.WHITE else -score
+            material_delta = _material_score(board) - before_material
+            material_delta = material_delta if mover == chess.WHITE else -material_delta
+            candidates.append({
+                "move": move.uci(),
+                "score": round(mover_score, 3),
+                "principal_variation": [move.uci(), *continuation],
+                "features": {
+                    "material_delta": round(material_delta, 3),
+                    "is_capture": is_capture,
+                    "gives_check": board.is_check(),
+                },
+            })
+        finally:
+            board.pop()
+
+    candidates.sort(key=lambda candidate: (-candidate["score"], candidate["move"]))
+    return candidates[:top_k]
+
+
+def _search_with_pv(board: chess.Board, depth: int, alpha: float, beta: float) -> tuple[float, list[str]]:
+    if board.is_game_over():
+        return evaluate_position(board), []
+    if depth == 0:
+        return _quiescence(board, alpha, beta), []
+
+    maximizing = board.turn == chess.WHITE
+    best_score = -float("inf") if maximizing else float("inf")
+    best_line = []
+    for move in list(board.legal_moves):
+        board.push(move)
+        try:
+            score, line = _search_with_pv(board, depth - 1, alpha, beta)
+        finally:
+            board.pop()
+        if (maximizing and score > best_score) or (not maximizing and score < best_score):
+            best_score, best_line = score, [move.uci(), *line]
+        if maximizing:
+            alpha = max(alpha, best_score)
+        else:
+            beta = min(beta, best_score)
+        if beta <= alpha:
+            break
+    return best_score, best_line
+
+
+def _quiescence(board: chess.Board, alpha: float, beta: float, remaining: int = 4) -> float:
+    """Continue through captures/promotions so leaf evaluations are stable."""
+    stand_pat = evaluate_position(board)
+    if remaining == 0 or board.is_game_over():
+        return stand_pat
+    maximizing = board.turn == chess.WHITE
+    if maximizing:
+        if stand_pat >= beta:
+            return stand_pat
+        alpha = max(alpha, stand_pat)
+    else:
+        if stand_pat <= alpha:
+            return stand_pat
+        beta = min(beta, stand_pat)
+
+    best = stand_pat
+    for move in [move for move in board.legal_moves if board.is_capture(move) or move.promotion]:
+        board.push(move)
+        try:
+            score = _quiescence(board, alpha, beta, remaining - 1)
+        finally:
+            board.pop()
+        best = max(best, score) if maximizing else min(best, score)
+        if maximizing:
+            alpha = max(alpha, best)
+        else:
+            beta = min(beta, best)
+        if beta <= alpha:
+            break
+    return best
+
+
+def _material_score(board: chess.Board) -> float:
+    values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
+    return float(sum(
+        (len(board.pieces(piece, chess.WHITE)) - len(board.pieces(piece, chess.BLACK))) * value
+        for piece, value in values.items()
+    ))
+
+
 def apply_agent_turn(game) -> dict:
     agent_color = "white" if game.engine.board.turn == chess.WHITE else "black"
     profile = game.white_agent if agent_color == "white" else game.black_agent
     message = build_turn_message(game, agent_color)
     move = select_agent_move(game.engine, profile)
 
+    applied = False
     if move:
-        game.engine.make_move(move[:2], move[2:4], move[4:] or None)
-        game.move_history.append(move)
+        applied = game.engine.make_move(move[:2], move[2:4], move[4:] or None)
+        if applied:
+            game.move_history.append(move)
 
     return {
-        "agent_move": move or None,
+        "agent_move": move if applied else None,
         "agent_color": agent_color,
         "agent_name": profile["name"],
         "agent_profile": profile,

@@ -66,6 +66,32 @@
   z-index: 1;
 }
 
+.lastMoveFrom {
+  box-shadow: inset 0 0 0 4px #2563eb;
+}
+
+.lastMoveTo {
+  box-shadow: inset 0 0 0 4px #14b8a6;
+}
+
+.lastMoveFrom::before,
+.lastMoveTo::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.lastMoveFrom::before {
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.lastMoveTo::before {
+  background: rgba(20, 184, 166, 0.28);
+}
+
 .piece {
   font-family: "Segoe UI Symbol", "Arial Unicode MS", serif;
   font-size: 44px;

@@ -28,6 +28,55 @@ def get_ai_move(engine: ChessEngine, difficulty: str) -> str:
     return random.choice(legal_moves)
 
 
+
+# Chebyshev distance from the 4 center squares to each square (0 = center, 3 = edge).
+# Used to reward driving a lone/outmatched king toward the edge, which is required
+# technique to actually deliver mate rather than just holding a material lead.
+_CENTER_DISTANCE = [
+    3, 3, 3, 3, 3, 3, 3, 3,
+    3, 2, 2, 2, 2, 2, 2, 3,
+    3, 2, 1, 1, 1, 1, 2, 3,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    3, 2, 1, 1, 1, 1, 2, 3,
+    3, 2, 2, 2, 2, 2, 2, 3,
+    3, 3, 3, 3, 3, 3, 3, 3,
+]
+
+# Roughly a rook's worth of material lead -- below this, chasing the enemy king
+# is premature and the bonus stays off so it never outweighs tactical decisions.
+_ENDGAME_MATERIAL_THRESHOLD = 5.0
+_KING_HUNT_WEIGHT = 0.15
+_KING_PROXIMITY_WEIGHT = 0.1
+
+
+def _king_hunt_bonus(board: chess.Board, material_score: float) -> float:
+    """
+    Once one side has a decisive material lead, reward pushing the weaker
+    king toward the edge and bringing the stronger king closer to it.
+
+    Without this, every move that keeps the material lead scores identically,
+    so the AI has no signal to make progress and shuffles pieces instead of
+    finishing the game.
+    """
+    if abs(material_score) < _ENDGAME_MATERIAL_THRESHOLD:
+        return 0.0
+
+    stronger_color = chess.WHITE if material_score > 0 else chess.BLACK
+    weaker_color = not stronger_color
+
+    strong_king = board.king(stronger_color)
+    weak_king = board.king(weaker_color)
+    if strong_king is None or weak_king is None:
+        return 0.0
+
+    push_to_edge = _CENTER_DISTANCE[weak_king] * _KING_HUNT_WEIGHT
+    bring_kings_together = (7 - chess.square_distance(strong_king, weak_king)) * _KING_PROXIMITY_WEIGHT
+
+    bonus = push_to_edge + bring_kings_together
+    return bonus if stronger_color == chess.WHITE else -bonus
+
+
 def evaluate_position(board: chess.Board) -> float:
     """Simple board evaluation: material count + positional factors"""
     if board.is_checkmate():
@@ -44,13 +93,15 @@ def evaluate_position(board: chess.Board) -> float:
         chess.KING: 0
     }
 
-    score = 0.0
+    material_score = 0.0
 
     # Material count
     for piece_type, value in piece_values.items():
         white_count = len(board.pieces(piece_type, chess.WHITE))
         black_count = len(board.pieces(piece_type, chess.BLACK))
-        score += (white_count - black_count) * value
+        material_score += (white_count - black_count) * value
+
+    score = material_score
 
     # Simple positional bonus: center control
     center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
@@ -59,6 +110,8 @@ def evaluate_position(board: chess.Board) -> float:
             score += 0.5
         elif board.piece_at(sq) and board.piece_at(sq).color == chess.BLACK:
             score -= 0.5
+
+    score += _king_hunt_bonus(board, material_score)
 
     return score
 

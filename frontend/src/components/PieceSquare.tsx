@@ -23,6 +23,8 @@ interface Props {
   isSelected: boolean
   isLegal: boolean
   isCapture: boolean
+  isLastMoveFrom: boolean
+  isLastMoveTo: boolean
   onClick: (square: string) => void
 }
 
@@ -33,6 +35,8 @@ export const PieceSquare: React.FC<Props> = ({
   isSelected,
   isLegal,
   isCapture,
+  isLastMoveFrom,
+  isLastMoveTo,
   onClick
 }) => {
   const pieceClass = piece && piece === piece.toUpperCase() ? styles.whitePiece : styles.blackPiece
@@ -47,6 +51,8 @@ export const PieceSquare: React.FC<Props> = ({
         ${isSelected ? styles.selected : ''}
         ${isLegal ? styles.legal : ''}
         ${isCapture ? styles.capture : ''}
+        ${isLastMoveFrom ? styles.lastMoveFrom : ''}
+        ${isLastMoveTo ? styles.lastMoveTo : ''}
       `}
       onClick={() => onClick(square)}
     >

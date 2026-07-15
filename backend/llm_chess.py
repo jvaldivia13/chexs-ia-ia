@@ -1,13 +1,19 @@
 import json
+import logging
 import os
 import re
 from pathlib import Path
 from typing import Optional
 
 import httpx
+from dotenv import load_dotenv
 
 from chess_engine import ChessEngine
+from reasoning_guidelines import format_reasoning_guidelines
 
+logger = logging.getLogger(__name__)
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 DEEPSEEK_CHAT_URL = "https://api.deepseek.com/chat/completions"
@@ -19,7 +25,6 @@ def choose_llm_move(engine: ChessEngine, profile: dict) -> str:
     if not legal_moves:
         return ""
 
-    _load_env_file()
     if provider == "openai":
         return _choose_openai_move(engine, profile, legal_moves)
     if provider == "deepseek":
@@ -30,6 +35,7 @@ def choose_llm_move(engine: ChessEngine, profile: dict) -> str:
 def _choose_openai_move(engine: ChessEngine, profile: dict, legal_moves: list[str]) -> str:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
+        logger.warning("OPENAI_API_KEY not set; falling back to local engine for agent %s", profile.get("name"))
         return ""
 
     model = profile.get("model") or "o4-mini"
@@ -59,14 +65,19 @@ def _choose_openai_move(engine: ChessEngine, profile: dict, legal_moves: list[st
             response.raise_for_status()
         decision = _extract_openai_json(response.json())
         move = decision.get("move", "")
-        return move if move in legal_moves else ""
+        if move in legal_moves:
+            return move
+        logger.warning("OpenAI returned a non-legal or empty move for agent %s: %r", profile.get("name"), move)
+        return ""
     except Exception:
+        logger.warning("OpenAI move request failed for agent %s; falling back to local engine", profile.get("name"), exc_info=True)
         return ""
 
 
 def _choose_deepseek_move(engine: ChessEngine, profile: dict, legal_moves: list[str]) -> str:
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
+        logger.warning("DEEPSEEK_API_KEY not set; falling back to local engine for agent %s", profile.get("name"))
         return ""
 
     model = profile.get("model") or "deepseek-reasoner"
@@ -96,24 +107,38 @@ def _choose_deepseek_move(engine: ChessEngine, profile: dict, legal_moves: list[
         content = response.json()["choices"][0]["message"]["content"]
         decision = _parse_json_text(content)
         move = decision.get("move", "")
-        return move if move in legal_moves else ""
+        if move in legal_moves:
+            return move
+        logger.warning("DeepSeek returned a non-legal or empty move for agent %s: %r", profile.get("name"), move)
+        return ""
     except Exception:
+        logger.warning("DeepSeek move request failed for agent %s; falling back to local engine", profile.get("name"), exc_info=True)
         return ""
 
 
 def _build_prompt(engine: ChessEngine, profile: dict, legal_moves: list[str]) -> str:
     color = "white" if engine.board.turn else "black"
+    candidates = profile.get("_candidates") or []
+    configured_reasoning = format_reasoning_guidelines(profile)
+    decision_context = (
+        "Engine-analyzed candidates (score is from your perspective):\n"
+        f"{json.dumps(candidates, ensure_ascii=False)}\n"
+        "Choose only one supplied candidate after comparing its principal variation and features.\n"
+        if candidates
+        else f"Legal moves in UCI: {legal_moves}\n"
+    )
     return (
         "Choose exactly one legal chess move for the current position.\n"
         f"Agent name: {profile.get('name', 'Agent')}\n"
         f"Agent color: {color}\n"
         f"Persona: {profile.get('persona', 'balanced')}\n"
         f"Expertise: {profile.get('expertise', 'normal')}\n"
+        f"{configured_reasoning}"
         f"FEN: {engine.get_fen()}\n"
         f"Move history: {engine.get_move_history()}\n"
-        f"Legal moves in UCI: {legal_moves}\n"
+        f"{decision_context}"
         "Return JSON only: {\"move\":\"e2e4\",\"plan\":\"...\",\"reason\":\"...\"}.\n"
-        "The move value must be copied exactly from the legal moves list."
+        "The move value must be copied exactly from the supplied move choices."
     )
 
 
@@ -152,20 +177,3 @@ def _parse_json_text(text: str) -> dict:
             return json.loads(match.group(0))
         except json.JSONDecodeError:
             return {}
-
-
-def _load_env_file() -> None:
-    env_path = Path(__file__).resolve().parent.parent / ".env"
-    if not env_path.exists():
-        return
-
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
-

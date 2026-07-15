@@ -9,6 +9,11 @@
   margin-top: 0;
 }
 
+.scroll {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .history table {
   width: 100%;
   font-size: 12px;

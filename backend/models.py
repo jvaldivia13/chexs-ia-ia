@@ -7,6 +7,7 @@ class AgentProfile(BaseModel):
     expertise: str  # 'easy', 'normal', or 'difficult'
     provider: str = "local"  # 'local', 'openai', or 'deepseek'
     model: Optional[str] = None
+    style: Optional[str] = None  # grandmaster style key, e.g. 'kasparov', 'tal', 'karpov', 'capablanca'
 
 class NewGameRequest(BaseModel):
     difficulty: str  # 'easy', 'normal', 'difficult'

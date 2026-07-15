@@ -86,6 +86,15 @@ setx DEEPSEEK_API_KEY "tu_api_key_deepseek"
 
 Despues de usar `setx`, cierra y vuelve a abrir la terminal o VS Code.
 
+Variables opcionales del backend:
+
+```env
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+LOG_LEVEL=INFO
+```
+
+`ALLOWED_ORIGINS` controla los origenes permitidos por CORS (por defecto, solo el frontend local). `LOG_LEVEL` controla el nivel de logging del backend (por ejemplo `DEBUG` para ver mas detalle de los fallos de LLM).
+
 ## Inicio Rapido
 
 ### Backend

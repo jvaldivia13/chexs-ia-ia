@@ -1,15 +1,27 @@
 import { useState, useCallback } from 'react'
+import axios from 'axios'
 import type { Difficulty, GameState, NewGameConfig } from '../types/chess'
 import { api } from '../services/api'
+
+function describeError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail
+    if (typeof detail === 'string') return detail
+    if (!error.response) return 'No se pudo conectar con el servidor.'
+  }
+  return fallback
+}
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [moveHistory, setMoveHistory] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const newGame = useCallback(async (config: NewGameConfig) => {
     setLoading(true)
+    setError(null)
     try {
       const response = await api.newGame(config)
       setDifficulty(config.difficulty)
@@ -27,6 +39,7 @@ export function useGameState() {
       setMoveHistory([])
     } catch (error) {
       console.error('Failed to start new game:', error)
+      setError(describeError(error, 'No se pudo iniciar la partida.'))
     } finally {
       setLoading(false)
     }
@@ -39,10 +52,9 @@ export function useGameState() {
     }
 
     setLoading(true)
+    setError(null)
     try {
-      console.log('Making move:', { from, to, promotion })
       const response = await api.makeMove(gameState.gameId, from, to, promotion, false)
-      console.log('Move response:', response)
 
       setGameState({
         gameId: gameState.gameId,
@@ -61,6 +73,7 @@ export function useGameState() {
       return true
     } catch (error) {
       console.error('Move failed:', error)
+      setError(describeError(error, 'La jugada no pudo realizarse.'))
       return false
     } finally {
       setLoading(false)
@@ -73,6 +86,7 @@ export function useGameState() {
     }
 
     setLoading(true)
+    setError(null)
     try {
       const response = await api.playAgentTurn(gameState.gameId)
       setGameState({
@@ -90,6 +104,7 @@ export function useGameState() {
       return Boolean(response.agent_move)
     } catch (error) {
       console.error('Agent turn failed:', error)
+      setError(describeError(error, 'El turno del agente IA fallo.'))
       return false
     } finally {
       setLoading(false)
@@ -107,6 +122,7 @@ export function useGameState() {
     difficulty,
     moveHistory,
     loading,
+    error,
     newGame,
     makeMove,
     playAgentTurn,

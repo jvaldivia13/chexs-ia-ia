@@ -13,7 +13,7 @@ export const GameControls: React.FC<Props> = ({ onNewGame, onUndo, disabled }) =
       <button onClick={onNewGame} disabled={disabled}>
         New Game
       </button>
-      <button onClick={onUndo} disabled={disabled}>
+      <button onClick={onUndo} disabled title="Deshacer aun no esta disponible">
         Undo
       </button>
     </div>

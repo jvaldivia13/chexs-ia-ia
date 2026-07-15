@@ -1,3 +1,5 @@
+import logging
+import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -15,11 +17,20 @@ from game_state import DEFAULT_BLACK_AGENT, DEFAULT_WHITE_AGENT, create_game, ge
 from ai import get_ai_move
 from a2a_agents import apply_agent_turn, normalize_agent_profile
 
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+
 app = FastAPI()
+
+DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS).split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -98,9 +109,9 @@ def make_move(request: MoveRequest):
     ai_move = None
     if request.auto_reply and game_status == "ongoing":
         # Get AI move
-        ai_move = get_ai_move(game.engine, game.difficulty)
-        if ai_move:
-            game.engine.make_move(ai_move[:2], ai_move[2:4], ai_move[4:] or None)
+        candidate_move = get_ai_move(game.engine, game.difficulty)
+        if candidate_move and game.engine.make_move(candidate_move[:2], candidate_move[2:4], candidate_move[4:] or None):
+            ai_move = candidate_move
             game.move_history.append(ai_move)
             game_status = game.engine.get_game_status()
 
